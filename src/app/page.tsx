@@ -214,17 +214,48 @@ export default function CoupangCsPage() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         const chunk = decoder.decode(value, { stream: true });
         fullText += chunk;
+      }
 
+      // 전체 텍스트 수신 후 단락 분리 확인
+      const paragraphs = fullText
+        .split(/\n\s*\n/)
+        .map(p => p.trim())
+        .filter(Boolean);
+
+      if (paragraphs.length <= 1) {
+        // 단일 메시지: 즉시 1개 말풍선 표시
         setMessages(prev =>
           prev.map(msg =>
             msg.id === customerReplyId
-              ? { ...msg, content: fullText, sources }
+              ? { ...msg, content: fullText.trim(), sources }
               : msg
           )
         );
+      } else {
+        // 다중 메시지: 실제 사람이 연달아 엔터 쳐서 보내듯 0.85초 간격으로 순차 렌더링!
+        // 1번째 메시지 먼저 표시
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === customerReplyId
+              ? { ...msg, content: paragraphs[0], sources }
+              : msg
+          )
+        );
+
+        // 2번째 이후 메시지를 0.85초 시차를 두고 순차적으로 톡! 톡! 띄움
+        for (let i = 1; i < paragraphs.length; i++) {
+          await new Promise(resolve => setTimeout(resolve, 850));
+          const currentDisplayed = paragraphs.slice(0, i + 1).join("\n\n");
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === customerReplyId
+                ? { ...msg, content: currentDisplayed, sources }
+                : msg
+            )
+          );
+        }
       }
     } catch (err: any) {
       if (err.name === "AbortError") {
