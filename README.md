@@ -8,7 +8,7 @@
 <br />
 
 <a href="https://rag-web-alpha.vercel.app" target="_blank">
-  <img src="https://img.shields.io/badge/Live_Console-체험하기-0074E9?style=for-the-badge&logo=vercel&logoColor=white" height="46" alt="Live Demo" />
+  <img src="./public/demo-banner.svg" width="340" alt="쿠팡 CS 콘솔 실시간 체험하기" />
 </a>
 
 <br />
