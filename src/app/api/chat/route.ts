@@ -42,6 +42,8 @@ export async function POST(req: NextRequest) {
           system: systemPrompt,
           messages: formattedMessages,
           temperature: 0.85,
+          frequencyPenalty: 0.5,
+          presencePenalty: 0.5,
           maxOutputTokens: 150,
         });
 
@@ -91,6 +93,8 @@ export async function POST(req: NextRequest) {
         system: systemPrompt,
         messages: formattedMessages,
         temperature: 0.85,
+        frequencyPenalty: 0.5,
+        presencePenalty: 0.5,
         maxOutputTokens: 150,
       });
 
@@ -107,6 +111,8 @@ export async function POST(req: NextRequest) {
       system: systemPrompt,
       messages: formattedMessages,
       temperature: 0.85,
+      frequencyPenalty: 0.5,
+      presencePenalty: 0.5,
       maxOutputTokens: 150,
     });
 
