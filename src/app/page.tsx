@@ -56,17 +56,37 @@ export default function CoupangCsPage() {
     return `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
   };
 
-  // 마운트 시 테마 초기화
+  // 마운트 시 OS/브라우저 테마 기본 감지 및 실시간 변경 연동
   useEffect(() => {
     setMounted(true);
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const savedTheme = localStorage.getItem("theme");
-    const initialDark = savedTheme !== null ? savedTheme === "dark" : true;
+
+    // 저장된 설정이 있으면 우선 적용, 없으면 시스템(OS/브라우저) 테마 따름
+    const initialDark = savedTheme !== null ? savedTheme === "dark" : mediaQuery.matches;
     setIsDarkMode(initialDark);
+
     if (initialDark) {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
     }
+
+    // 사용자가 직접 토글하지 않은 상태라면, OS 테마 변경 시 자동 반영
+    const handleMediaChange = (e: MediaQueryListEvent) => {
+      const userTheme = localStorage.getItem("theme");
+      if (!userTheme) {
+        setIsDarkMode(e.matches);
+        if (e.matches) {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+      }
+    };
+
+    mediaQuery.addEventListener("change", handleMediaChange);
+    return () => mediaQuery.removeEventListener("change", handleMediaChange);
   }, []);
 
   const toggleTheme = () => {
