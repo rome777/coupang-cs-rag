@@ -41,6 +41,7 @@ export default function CoupangCsPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isCustomerTyping, setIsCustomerTyping] = useState<boolean>(false);
   const [useRag, setUseRag] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedSources, setExpandedSources] = useState<Record<string, boolean>>({});
@@ -165,12 +166,7 @@ export default function CoupangCsPage() {
     setMessages(newMessages);
     setInput("");
     setIsLoading(true);
-
-    const customerReplyId = "customer-" + (Date.now() + 1);
-    setMessages(prev => [
-      ...prev,
-      { id: customerReplyId, role: "assistant", content: "", timestamp: formatCurrentTime() }
-    ]);
+    setIsCustomerTyping(true); // 고객 타이핑 중 UI 즉시 켜기
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -218,40 +214,54 @@ export default function CoupangCsPage() {
         fullText += chunk;
       }
 
-      // 전체 텍스트 수신 후 단락 분리 확인
+      // 실제 고객이 글을 읽고 타자를 치는 현실적인 최소 시간 (1.5초)
+      await new Promise(r => setTimeout(r, 1500));
+
       const paragraphs = fullText
         .split(/\n\s*\n/)
         .map(p => p.trim())
         .filter(Boolean);
 
-      if (paragraphs.length <= 1) {
-        // 단일 메시지: 즉시 1개 말풍선 표시
-        setMessages(prev =>
-          prev.map(msg =>
-            msg.id === customerReplyId
-              ? { ...msg, content: fullText.trim(), sources }
-              : msg
-          )
-        );
-      } else {
-        // 다중 메시지: 실제 사람이 연달아 엔터 쳐서 보내듯 0.85초 간격으로 순차 렌더링!
-        // 1번째 메시지 먼저 표시
-        setMessages(prev =>
-          prev.map(msg =>
-            msg.id === customerReplyId
-              ? { ...msg, content: paragraphs[0], sources }
-              : msg
-          )
-        );
+      const customerReplyId = "customer-" + Date.now();
 
-        // 2번째 이후 메시지를 0.85초 시차를 두고 순차적으로 톡! 톡! 띄움
+      if (paragraphs.length <= 1) {
+        // 단일 메시지: 타이핑 종료 후 톡! 표시
+        setIsCustomerTyping(false);
+        setMessages(prev => [
+          ...prev,
+          {
+            id: customerReplyId,
+            role: "assistant",
+            content: fullText.trim(),
+            timestamp: formatCurrentTime(),
+            sources
+          }
+        ]);
+      } else {
+        // 다중 메시지: 1번째 메시지 먼저 표시
+        setIsCustomerTyping(false);
+        setMessages(prev => [
+          ...prev,
+          {
+            id: customerReplyId,
+            role: "assistant",
+            content: paragraphs[0],
+            timestamp: formatCurrentTime(),
+            sources
+          }
+        ]);
+
+        // 2번째 이후 메시지는 각각 1.6초씩 타이핑 UI를 띄우며 순차적으로 발송!
         for (let i = 1; i < paragraphs.length; i++) {
-          await new Promise(resolve => setTimeout(resolve, 850));
+          setIsCustomerTyping(true); // 다시 메시지 치는 UI 표시
+          await new Promise(r => setTimeout(r, 1600)); // 1.6초 동안 타자 침
+          setIsCustomerTyping(false);
+
           const currentDisplayed = paragraphs.slice(0, i + 1).join("\n\n");
           setMessages(prev =>
             prev.map(msg =>
               msg.id === customerReplyId
-                ? { ...msg, content: currentDisplayed, sources }
+                ? { ...msg, content: currentDisplayed }
                 : msg
             )
           );
@@ -264,6 +274,7 @@ export default function CoupangCsPage() {
         setError(err.message || "고객 응답을 불러오는 중 오류가 발생했습니다.");
       }
     } finally {
+      setIsCustomerTyping(false);
       setIsLoading(false);
       abortControllerRef.current = null;
     }
@@ -558,11 +569,27 @@ export default function CoupangCsPage() {
           );
         })}
 
-        {/* 고객 입력 인디케이터 (상담원이 고객 말을 끊을 수 없음) */}
-        {isLoading && (
-          <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 text-xs py-1 pl-11">
-            <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#0074E9] dark:text-blue-400" />
-            <span className="italic">{currentScenario.customerName} 고객님이 답변을 입력하고 있습니다...</span>
+        {/* 고객이 메시지 치고 있는 UI: 실제 모바일 메신저 3단 통통 튀는 애니메이션 말풍선 */}
+        {isCustomerTyping && (
+          <div className="flex gap-3 justify-start items-end animate-fade-in pl-1">
+            {/* 고객 아바타 */}
+            <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 flex items-center justify-center shrink-0 shadow-2xs">
+              <User className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+            </div>
+
+            <div className="space-y-1">
+              <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                {currentScenario.customerName} 고객님
+              </div>
+              <div className="bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 rounded-2xl rounded-tl-xs px-4 py-3 shadow-2xs inline-flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#0074E9] dark:bg-blue-400 animate-bounce [animation-delay:-0.3s]"></span>
+                <span className="w-2 h-2 rounded-full bg-[#0074E9] dark:bg-blue-400 animate-bounce [animation-delay:-0.15s]"></span>
+                <span className="w-2 h-2 rounded-full bg-[#0074E9] dark:bg-blue-400 animate-bounce"></span>
+                <span className="text-xs text-slate-400 dark:text-slate-400 ml-1 font-medium">
+                  메시지 입력 중...
+                </span>
+              </div>
+            </div>
           </div>
         )}
 
