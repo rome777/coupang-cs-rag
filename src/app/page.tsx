@@ -442,21 +442,35 @@ export default function CoupangCsPage() {
                   </div>
                 )}
 
-                {/* 말풍선 */}
-                <div
-                  className={`p-3.5 md:p-4 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap shadow-2xs ${
-                    isAgent
-                      ? "bg-[#0074E9] text-white rounded-tr-xs"
-                      : "bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-tl-xs"
-                  }`}
-                >
-                  {message.content || (
-                    <span className="text-slate-400 dark:text-slate-400 italic flex items-center gap-1.5 text-xs">
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#0074E9] dark:text-blue-400" />
-                      고객님이 답변을 작성 중입니다...
-                    </span>
-                  )}
-                </div>
+                {/* 말풍선 (고객의 경우 여러 개 연속 발화 시 개별 버블로 분리 렌더링) */}
+                {isAgent ? (
+                  <div className="p-3.5 md:p-4 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap shadow-2xs bg-[#0074E9] text-white rounded-tr-xs">
+                    {message.content}
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    {message.content ? (
+                      message.content
+                        .split(/\n\s*\n/)
+                        .filter(Boolean)
+                        .map((chunk, idx) => (
+                          <div
+                            key={idx}
+                            className="p-3 md:p-3.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap shadow-2xs bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-tl-xs"
+                          >
+                            {chunk.trim()}
+                          </div>
+                        ))
+                    ) : (
+                      <div className="p-3.5 md:p-4 rounded-2xl text-sm leading-relaxed shadow-2xs bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 rounded-tl-xs">
+                        <span className="text-slate-400 dark:text-slate-400 italic flex items-center gap-1.5 text-xs">
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#0074E9] dark:text-blue-400" />
+                          고객님이 답변을 작성 중입니다...
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* 챗봇(고객) 답변 시 하단에 뜨는 "상담원 참고용 CS 처리 지침 (RAG)" */}
                 {!isAgent && sources && sources.length > 0 && (
