@@ -7,7 +7,7 @@
 
 <br />
 
-<a href="https://rag-web-coupang-cs.vercel.app" target="_blank">
+<a href="https://rag-web-alpha.vercel.app" target="_blank">
   <img src="https://img.shields.io/badge/Live_Console-체험하기-0074E9?style=for-the-badge&logo=vercel&logoColor=white" height="46" alt="Live Demo" />
 </a>
 
